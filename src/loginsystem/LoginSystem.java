@@ -37,8 +37,9 @@ public class LoginSystem {
         
         LoginSystem loginSystem = new LoginSystem();
         
-        User userOne = new User("", "", "", "", "", "", "");
-        userOne.setSalt(loginSystem.salt());
+        User userOne = new User("", "", "", "", "", "", "", "");
+        final String actualSalt = loginSystem.salt();
+        userOne.setSalt(actualSalt);
         RegisterJFrame registerUserOne = new RegisterJFrame(userOne, loginSystem);
         registerUserOne.setVisible(true);
         LoginJFrame loginJFrame = new LoginJFrame(userOne, loginSystem);
@@ -71,6 +72,7 @@ public class LoginSystem {
         pw.print(user.getEmail() + user.getDelimeter());
         pw.print(user.getBirthLocation() + user.getDelimeter());
         pw.print(user.getAddress() + user.getDelimeter());
+        pw.print(user.getSalt() + user.getDelimeter());
         pw.flush();
         pw.close();
           } catch (IOException ex) {
@@ -82,110 +84,128 @@ public class LoginSystem {
      * 
      * @return An ArrayList containing User objects loaded from the file.
      */
-    public ArrayList<User> loadUser() {
+    public ArrayList<User> loadUser(){
+        Scanner myReader;
         ArrayList<User> users = new ArrayList<>();
-        try (Scanner myReader = new Scanner(f)) {
+        try {
+            myReader = new Scanner(f);
             while (myReader.hasNextLine()) {
                 String[] userData = myReader.nextLine().split(User.getDelimeter());
                 User user = new User(userData[0], userData[1], userData[2], userData[3],
-                        userData[4], userData[5], userData[6]);
-                users.add(user);
+                userData[4], userData[5], userData[6], userData[7]);
+                users.add(user);              
             }
+            myReader.close();
+            
         } catch (FileNotFoundException ex) {
-            System.out.println("File not found: " + ex.getMessage());
+            System.out.println("File not found");
         }
         return users;
     }
-
+    
     /**
-     * Checks if a username is unique among existing users.
-     * 
-     * @param name  The username to check for uniqueness.
-     * @param users The list of existing users.
-     * @return      True if the username is unique, false otherwise.
+     * Iterates through a list of users and ensures username entered is unique
+     * @param name
+     * @param users
+     * @return 
      */
-    public boolean isUniqueName(String name, ArrayList<User> users) {
-        for (User currentUser : users) {
-            if (name.equals(currentUser.getUsername())) {
+    public boolean isUniqueName(String name, ArrayList<User> users){
+        for (User currentUser: users){
+            if (name.equals(currentUser.getUsername())){
                 return false;
             }
         }
         return true;
     }
-
     /**
-     * Checks if a password meets the strength criteria.
-     * Checks to ensure password doesn't match file of weak passwords
-     * 
-     * @param password The password to check for strength.
-     * @return         True if the password is strong, false otherwise.
+     * Takes a password and ensures it is strong
+     * by ensuring it doesn't match weak passwords
+     * and is at least 5 characters
+     * @param password
+     * @return 
      */
-    public boolean isPasswordStrong(String password) {
-        if (password.length() < 5) {
+    public boolean isPasswordStrong(String password){
+        if (password.length() < 5){
             return false;
         }
-        try (Scanner myReader = new Scanner(passwordsFile)) {
+        try {
+            Scanner myReader = new Scanner(passwordsFile);
             while (myReader.hasNextLine()) {
-                if (password.equals(myReader.nextLine())) {
+                String data = myReader.nextLine();
+                if (password.equals(data)){
                     return false;
                 }
             }
+            
         } catch (FileNotFoundException ex) {
-            System.out.println("File not found: " + ex.getMessage());
+            System.out.println("File not found");;
         }
         return true;
     }
-
     /**
-     * Registers a new user.
-     * Checks to ensure username is unique and password is strong
-     * @param user The user object to be registered.
+     * Takes in a user and if the user has unique charateristics
+     * then the user is generated in the file
+     * @param user 
      */
-    public void register(User user) {
-        if (isUniqueName(user.getUsername(), loadUser())) {
-            System.out.println("Username is unique");
-            if (isPasswordStrong(user.getPassword())) {
-                System.out.println("Password is strong");
-                String saltedPassword = user.getPassword() + salt();
-                user.setPassword(strengthenPassword(saltedPassword));
-                saveUser(user);
-            } else {
-                System.out.println("Password is not strong");
-            }
-        } else {
-            System.out.println("Username is not unique");
+    public void register(User user){
+        
+        if (isUniqueName(user.getUsername(), loadUser()) == true){
+            if (isPasswordStrong(user.getPassword())){
+                System.out.println("User is generated");
+            String password = user.getPassword() + user.getSalt();
+            user.setPassword(strengthenPassword(password));
+            saveUser(user);
         }
+        else {
+            System.out.println("password is not unqiue");
+        }
+        }
+        else {
+            System.out.println("Username is not unqiue");
+        }
+        
     }
-
     /**
-     * Generates a salt for password hashing.
-     * 
-     * @return The generated salt.
+     * Create a random string to behave like a salt for
+     * encryption
+     * @return 
      */
-    public String salt() {
+    public String salt(){
+        String salt;
         byte[] byteArray = new byte[5];
-        new Random().nextBytes(byteArray);
-        return new String(byteArray, Charset.forName("UTF-8"));
+        Random random = new Random();
+        random.nextBytes(byteArray);
+ 
+        salt = new String(byteArray, Charset.forName("UTF-8"));
+        return salt;
     }
-
+    
     /**
-     * Applies password strengthening (hashing) to a password.
-     * 
-     * @param password The password to be strengthened.
-     * @return         The strengthened (hashed) password.
+     * Takes in a password and encrypts it
+     * @param password
+     * @return 
      */
-    public String strengthenPassword(String password) {
-        StringBuilder encryptedPassword = new StringBuilder();
+    public String strengthenPassword(String password){
+        String encrypedPassword="";
         try {
+            //password to be encrypted
+            
+            //java helper class to perform encryption
             MessageDigest md = MessageDigest.getInstance("MD5");
+            //give the helper function the password
             md.update(password.getBytes());
-            byte[] byteData = md.digest();
-            for (byte aByteData : byteData) {
-                encryptedPassword.append(Integer.toHexString((aByteData & 0xFF) | 0x100).substring(1, 3));
-            }
-        } catch (NoSuchAlgorithmException ex) {
+            //perform the encryption
+            byte byteData[] = md.digest();
+            //To express the byte data as a hexadecimal number (the normal way)
+            
+            for (int i = 0; i < byteData.length; ++i) {
+                encrypedPassword += (Integer.toHexString((byteData[i] & 0xFF) |
+                        0x100).substring(1,3));
+            }   } catch (NoSuchAlgorithmException ex) {
             Logger.getLogger(LoginSystem.class.getName()).log(Level.SEVERE, null, ex);
         }
-        return encryptedPassword.toString();
+
+        return encrypedPassword;
+        
     }
 }

@@ -143,9 +143,10 @@ public class LoginJFrame extends javax.swing.JFrame {
             
     
             if ((jTextField1.getText()).equals(eachUser.getUsername())){
-                String newPassword = jPasswordField1.getText() + user.getSalt();
+                String newPassword = jPasswordField1.getText() + eachUser.getSalt();
             String realPassword;
             realPassword = loginSystem.strengthenPassword(newPassword);
+                System.out.println(user.getSalt());
             if (realPassword.equals(eachUser.getPassword())){
             System.out.println("Log in was successfull");
             }

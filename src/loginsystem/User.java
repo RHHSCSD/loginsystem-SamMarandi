@@ -34,7 +34,7 @@ public class User {
     private String salt;
     public User(String username, String password, String name, 
             String age, String birthLocation, String email
-            ,String address){
+            ,String address, String salt){
         
         this.username = username;
         this.password = password;
@@ -43,6 +43,7 @@ public class User {
         this.email = email;
         this.birthLocation = birthLocation;
         this.address = address;
+        this.salt = salt;
     }
     public void register(){
         
